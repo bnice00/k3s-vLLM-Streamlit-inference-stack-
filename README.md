@@ -1,2 +1,2 @@
-                                           K3s infernece stack on VLLM ROCM image
+                                           K3s inference stack on VLLM ROCM image
 
