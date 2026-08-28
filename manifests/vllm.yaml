@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vllm
+  name: vllm
+  namespace: vllm-rocm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      containers:
+      - image: vllm/vllm-openai-rocm:latest
+        name: vllm-openai-rocm
+        resources:
+          limits:
+            amd.com/gpu: 1
+        volumeMounts:
+          - name: model-storage
+            mountPath: /root/.cache/huggingface
+        args:
+          - "--model"
+          - "ornith-ai/Ornith-1.5-9B"
+          - "--max-model-len"
+          - "8192"
+          - "--max-num-seqs"
+          - "32"
+          - "--reasoning-parser"
+          - "qwen3"
+        ports:
+          - containerPort: 8000
+      volumes:
+      - name: model-storage
+        hostPath:
+          path: /root/vllm/huggingface
+          type: DirectoryOrCreate
+      enableServiceLinks: false
+
+status: {}

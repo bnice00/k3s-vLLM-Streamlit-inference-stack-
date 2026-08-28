@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: streamlit
+  name: streamlit
+  namespace: vllm-rocm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: streamlit
+    spec:
+      containers:
+      - image: a1abeachbum/streamlit_vllm_py:v2
+        name: streamlit-vllm-py-qcf4t
+        resources: {}
+        ports:
+        - containerPort: 8501
+        env:
+        - name: VLLM_URL
+          value: "http://vllm.vllm-rocm.svc.cluster.local:8000/v1/chat/completions"
+      imagePullSecrets:
+       - name: regcred
+status: {}
