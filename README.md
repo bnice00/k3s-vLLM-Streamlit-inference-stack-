@@ -52,17 +52,17 @@
 ....................................................................................................
 ....................................................................................................
 ```
-## Summary1.0
+## Summary 1.0
 This project was one i took on to learn the fundamentals of Kubernetes and also to familiarize myself with vLLM serving over a cluster on the ROCM image. I am using K3s instead of traditional
 k8s since my basic needs did not exceed K3s capabilities. Keeping this project on K3s reduced unneccesary complexity in a homelab setting where i am the only user. This setup requires using the
-latest amd_gpu linux drivers as well as the dedicated rocm/k8s-device-plugin daemonset. I am also utilizing the rocm/k8s-device-labeller to get more detailed GPU statistics. The k8s-device-plugin 
+latest amdgpu linux drivers as well as the dedicated rocm/k8s-device-plugin daemonset. I am also utilizing the rocm/k8s-device-labeller to get more detailed GPU statistics. The k8s-device-plugin 
 daemonset is the essential piece to advertise GPU resources properly on the cluster. Advertising the GPU this way on top of adding "resources.limits.amd.com/gpu: 1" to the vLLM manifest allows the 
 scheduler to only place pods on nodes whom which the device plugin advertises resources.limits.amd.com/gpu: 1.
 
 This stack was built originally using the model Ornith1.5/9B at full precision. The model is interchangeable but would require a rebuild of the docker image after changing the model field in agent.py 
 as well as the vLLM manifest.
 
-### Hardware1.1 
+### Hardware 1.1 
 The cluster Consist of two nodes;
 
 -BeachBumHQ/control plane= (Ryzen 3 5300G desktop, 32gb DDR4, running Ubuntu desktop 26.04) 
@@ -74,7 +74,7 @@ The cluster Consist of two nodes;
 I Chose this hardware specifically to target ROCM 7.0 support since speeds and throughput have greatly increased with proper driver support for AMD silicon in the past year. 
 
 
-### Deployments1.2
+### Deployments 1.2
 Within the cluster we run 2 deployment manifests scaled to "replicas=1" since this project only requires availability for personal use. vLLM is the first deployment, using the official vLLm-ROCM image. This depl-
 oyment runs the model weights and serves the openAI endpoint on ClusterIP port:8000.
 The second deployment is a Streamlit docker image that i built locally integrating the agent.py I wrote to make chat history persistent per session and draw the chat logs on the Streamlit web ui.
@@ -84,17 +84,17 @@ This image is built on a python base, and reaches vLLm over cluster dns at port:
 -Access at http://192.168.x.xxx:31182
 
 
-### Services & Exposure1.3
+### Services & Exposure 1.3
 Both of these deployments are exposed by a service. I initially exposed these by a "kubectl expose" command but have now captured them in a manifest through the "--dry-run=client" to allow the repo 
 to be rebuilt declaratively without additional commands. My choice in exposing only the Streamlit image to my LAN was a deliberate decision to minimize attack surface only exposing the service that needs to be interacted with,
 while its communication with vLLM stays private within the cluster.
 
 
 
-## Requirements2.0
+## Requirements 2.0
 -prerequisites for running this stack
 
-### Initial set up2.1
+### Initial set up 2.1
 
 ```bash
 curl -sfL https://get.k3s.io | sh - 
@@ -105,9 +105,43 @@ curl -sfL https://get.k3s.io | sh -
 ```bash
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
--Get cluster agent token from file  
+-Get cluster agent token from file
 
-### Firewall rules2.2
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://<your_server_ip>:6443 K3S_TOKEN=<your_node_token> sh -
+```
+-install and start k3s on the agent node using the token
+
+### Docker build 
+> You must build the docker image prior to moving on in these steps. See my docker build commands and notes below.  
+Install docker desktop with your preferred package manager first.
+> The included manifests are pointed at my private dockerhub repo and image. Adjust to your use case.
+This is to be built on Python3 base; see dockerfile.
+> Streamlit manifest reference a regcred file to pull from a private repo, this is to harden security by removing bare credentials from the manifest. Use the commands below to generate your regcred.
+```bash
+cd ~/<path_to_repo>/streamlit
+```
+-Enter into the /streamlit directory
+```bash
+docker login
+```
+-Login to your docker account
+```bash
+docker build --platform linux/amd64 -t <your_username>/<your_repo>:v1 .
+```
+-Build the docker image at your registry. ( I built this image on a apple silicon mac therefore the --platform linux/amd64 flag was required for the target machines, keep this in mind when building your image
+and adjust as necessary for your target machine)
+```bash
+docker push <your_username>/<your_repo>:v1
+```
+-Push to your docker hub registry to be able to pull back into k3s as a image in the streamlit manifest. 
+```bash
+kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=<your_username> --docker-password=<your_token> -n vllm-rocm
+```
+-Create the "regcred" file using your specific docker token to avoid leaking Docker password into the shell.
+>after these steps are completed verify your image is available on dockerhub; if True proceed to firewall config.
+
+### Firewall rules 2.2
 To use this repo and run my configuration there is some firewall rule additons that must be made. Please see k8s documentation on the reccomended, optional and required ports @:
 https://docs.k3s.io/installation/requirements
 If you would like to use my port configuration it is as follows:
@@ -131,10 +165,12 @@ sudo ufw delete "numberofrule"
 -delete any rules added by mistake if needed. 
 
 
-### Rules list2.3
+### Rules list 2.3
 
 --Control Plane--
   
+| Port | Proto | From | Purpose |
+|---|---|---|---|
 | 22 | tcp | `192.168.4.0/24` | SSH |
 | 6443 | tcp | Anywhere | k3s API server (agent join) |
 | 8472 | udp | Anywhere | flannel VXLAN overlay |
@@ -144,15 +180,16 @@ sudo ufw delete "numberofrule"
 | 31182 | tcp | `192.168.4.0/24` | Streamlit NodePort (LAN access) |
 
 --Agent--
-  
+
+| Port | Proto | From | Purpose |
+|---|---|---|---|
 | 22 | tcp | Anywhere | SSH |
 | 8472 | udp | Anywhere | flannel VXLAN |
 | 10250 | tcp | Anywhere | kubelet |
 | — | — | `10.42.0.0/16` | pod network |
 | — | — | `10.43.0.0/16` | service network |
 
-
-## Run Commands3.0
+## Run Commands 3.0
 
 ### Apply manifests
 
@@ -183,7 +220,7 @@ kubectl logs deployments/streamlit -n vllm-rocm -f
 
 > keep in mind to run any kubectl commands against components of this stack you need to add the -n vllm-rocm to declare which namespace to perform the requested operation in.
 
-> Sudo prefix maybe required when running kubectl commands  depending on your root access 
+> Sudo prefix maybe required when running kubectl commands  depending on your root access. 
 
-> It should be stated that this project is completely human made with the excepion of the file kube_vllm-stack-build-doc.md which was generated with claude from my project notes
-and description
+> It should be stated that this project is completely human made with the exception of the file kube_vllm-stack-build-doc.md which was generated with claude from my project notes
+and description.
