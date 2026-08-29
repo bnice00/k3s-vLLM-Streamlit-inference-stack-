@@ -222,5 +222,3 @@ kubectl logs deployments/streamlit -n vllm-rocm -f
 
 > Sudo prefix maybe required when running kubectl commands  depending on your root access. 
 
-> It should be stated that this project is completely human made with the exception of the file kube_vllm-stack-build-doc.md which was generated with claude from my project notes
-and description.
