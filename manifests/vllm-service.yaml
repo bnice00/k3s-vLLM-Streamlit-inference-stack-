@@ -12,6 +12,5 @@ spec:
     targetPort: 8000
   selector:
     app: vllm
+  sessionAffinity: None
   type: ClusterIP
-status:
-  loadBalancer: {}

@@ -8,3 +8,8 @@ __pycache__/
 .env
 .pytest_cache/
 .DS_Store
+.gitignore
+.git
+.secret
+*.key
+hermes-key*

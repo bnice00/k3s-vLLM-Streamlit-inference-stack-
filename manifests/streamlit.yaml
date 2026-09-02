@@ -18,14 +18,17 @@ spec:
         app: streamlit
     spec:
       containers:
-      - image: a1abeachbum/streamlit_vllm_py:v2
+      - image: a1abeachbum/streamlit_vllm_py@sha256:1fef004f8fe1660a793ae9ac50fe99fca7b87cddaf97644af99931738601dbb8
         name: streamlit-vllm-py-qcf4t
-        resources: {}
         ports:
         - containerPort: 8501
         env:
-        - name: VLLM_URL
-          value: "http://vllm.vllm-rocm.svc.cluster.local:8000/v1/chat/completions"
+        - name: HERMES_URL
+          value: "http://hermes-serve.hermes-lair.svc.cluster.local:8642/v1/chat/completions"
+        - name: HERMES_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gateway-secret
+              key: apiKey
       imagePullSecrets:
        - name: regcred
-status: {}

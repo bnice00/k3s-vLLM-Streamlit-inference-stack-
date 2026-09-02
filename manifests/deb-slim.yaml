@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: deb-slim
+  namespace: hermes-lair
+spec:
+  selector:
+    matchLabels:
+      app: deb-slim
+  serviceName: "deb-slim"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: deb-slim
+    spec:
+      containers:
+      - name: deb-slim
+        image: a1abeachbum/deb-slim-ssh@sha256:6d77365ccbac72e5dbdf35e2f78fea02770ce646bb9fa507c50b27e05aa4898c
+        ports:
+          - containerPort: 22

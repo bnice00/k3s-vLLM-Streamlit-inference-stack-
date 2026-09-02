@@ -7,12 +7,11 @@ metadata:
   namespace: vllm-rocm
 spec:
   ports:
-  - port: 8501
+  - nodePort: 31182
+    port: 8501
     protocol: TCP
     targetPort: 8501
-    nodePort: 31182
   selector:
     app: streamlit
+  sessionAffinity: None
   type: NodePort
-status:
-  loadBalancer: {}

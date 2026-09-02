@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hermes
+  name: hermes
+  namespace: hermes-lair
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      containers:
+      - image: nousresearch/hermes-agent:latest
+        name: hermes-agent
+        volumeMounts:
+        - name: hermes-data
+          mountPath: /opt/data
+        - name: ssh-key
+          mountPath: /etc/hermes-ssh
+          readOnly: true
+        env:
+          - name: API_SERVER_ENABLED
+            value: "true"
+          - name: HERMES_GATEWAY_SSH_STRICT_HOST_KEY_CHECKING
+            value: "no"
+          - name: API_SERVER_HOST
+            value: "0.0.0.0"
+        args:
+          - "gateway"
+          - "run"
+      volumes:
+      - name: hermes-data
+        persistentVolumeClaim:
+          claimName: hermes-data
+      - name: ssh-key
+        secret:
+          secretName: hermes-ssh-key
+          defaultMode: 0440
+      securityContext:
+        fsGroup: 10000
